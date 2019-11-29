@@ -3,6 +3,8 @@ module Main exposing (..)
 import Browser
 import Html exposing (..)
 import Html.Events exposing (onClick)
+import Svg
+import Svg.Attributes as SA
 
 
 
@@ -55,4 +57,19 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    div [ onClick Click ] [ text ("Click me " ++ String.fromInt model.clicks) ]
+    div [ onClick Click ] [ viewCircle model.clicks ]
+
+
+viewCircle : Int -> Html Msg
+viewCircle clicks =
+    Svg.svg
+        []
+        [ Svg.circle
+            [ SA.fill "white"
+            , SA.stroke "blue"
+            , SA.cx "50"
+            , SA.cy "50"
+            , SA.r (String.fromInt clicks)
+            ]
+            []
+        ]
