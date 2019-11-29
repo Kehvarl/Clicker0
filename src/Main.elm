@@ -2,13 +2,14 @@ module Main exposing (..)
 
 import Browser
 import Html exposing (..)
+import Html.Events exposing (onClick)
 
 
 
 --MAIN
 
 
-main : Program () Model msg
+main : Program () Model Msg
 main =
     Browser.element
         { init = init
@@ -35,15 +36,23 @@ init _ =
 --UPDATE
 
 
-update : msg -> Model -> ( Model, Cmd msg )
-update _ _ =
-    ( Model 0, Cmd.none )
+type Msg
+    = Click
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+    case msg of
+        Click ->
+            ( { model | clicks = model.clicks + 1 }
+            , Cmd.none
+            )
 
 
 
 --VIEW
 
 
-view : Model -> Html msg
-view _ =
-    div [] [ text "Click me" ]
+view : Model -> Html Msg
+view model =
+    div [ onClick Click ] [ text ("Click me " ++ String.fromInt model.clicks) ]
