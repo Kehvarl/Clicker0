@@ -13,7 +13,7 @@ main =
     Browser.element
         { init = init
         , view = view
-        , update = \msg model -> ( Model 0, Cmd.none )
+        , update = update
         , subscriptions = \model -> Sub.none
         }
 
@@ -26,7 +26,17 @@ type alias Model =
 --INIT
 
 
+init : flags -> ( Model, Cmd msg )
 init _ =
+    ( Model 0, Cmd.none )
+
+
+
+--UPDATE
+
+
+update : msg -> Model -> ( Model, Cmd msg )
+update _ _ =
     ( Model 0, Cmd.none )
 
 
