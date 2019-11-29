@@ -21,8 +21,18 @@ main =
         }
 
 
+type alias Circle =
+    { id : Int
+    , x : Int
+    , y : Int
+    , size : Int
+    }
+
+
 type alias Model =
-    { clicks : Int }
+    { circles : List Circle
+    , next : Int
+    }
 
 
 
@@ -31,7 +41,7 @@ type alias Model =
 
 init : flags -> ( Model, Cmd msg )
 init _ =
-    ( Model 0, Cmd.none )
+    ( Model [ Circle 0 100 100 5, Circle 1 100 150 5 ] 2, Cmd.none )
 
 
 
@@ -39,14 +49,22 @@ init _ =
 
 
 type Msg
-    = Click
+    = Click Int
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Click ->
-            ( { model | clicks = model.clicks + 1 }
+        Click id ->
+            let
+                checkCircle c =
+                    if c.id == id then
+                        { c | size = c.size + 1 }
+
+                    else
+                        c
+            in
+            ( { model | circles = List.map checkCircle model.circles }
             , Cmd.none
             )
 
@@ -57,19 +75,22 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    div [ onClick Click ] [ viewCircle model.clicks ]
-
-
-viewCircle : Int -> Html Msg
-viewCircle clicks =
-    Svg.svg
+    div
         []
-        [ Svg.circle
-            [ SA.fill "white"
-            , SA.stroke "blue"
-            , SA.cx "50"
-            , SA.cy "50"
-            , SA.r (String.fromInt clicks)
-            ]
-            []
+        [ Svg.svg
+            [ SA.viewBox "0,0,500,500" ]
+            (List.map viewCircle model.circles)
         ]
+
+
+viewCircle : Circle -> Html Msg
+viewCircle c =
+    Svg.circle
+        [ SA.fill "white"
+        , SA.stroke "blue"
+        , SA.cx (String.fromInt c.x)
+        , SA.cy (String.fromInt c.y)
+        , SA.r (String.fromInt c.size)
+        , onClick (Click c.id)
+        ]
+        []
