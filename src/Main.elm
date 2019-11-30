@@ -56,7 +56,7 @@ type alias Model =
 
 init : flags -> ( Model, Cmd msg )
 init _ =
-    ( Model [ Circle 0 100 100 5 Blue False ] 1 75 75, Cmd.none )
+    ( Model [ Circle 0 75 300 5 Blue False ] 1 75 75, Cmd.none )
 
 
 subscriptions : Model -> Sub Msg
@@ -79,7 +79,7 @@ type Msg
 
 randomPos : Random.Generator Int
 randomPos =
-    Random.int 0 100
+    Random.uniform 55 [ 75 ]
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -120,7 +120,7 @@ update msg model =
             )
 
         PosY y ->
-            ( { model | nextY = y }
+            ( { model | nextY = 300 }
             , Cmd.none
             )
 
@@ -132,10 +132,10 @@ update msg model =
                             popCircle model.nextX model.nextY c
 
                         else
-                            { c | size = c.size + 1 }
+                            { c | size = c.size + 1, y = c.y - 1 }
 
                     else
-                        c
+                        { c | y = c.y - 1 }
             in
             ( { model | circles = List.map checkCircle model.circles }
             , Random.generate PosX randomPos
@@ -178,8 +178,49 @@ view model =
     div
         []
         [ Svg.svg
-            [ SA.viewBox "0,0,500,500" ]
+            [ SA.height "300", SA.width "400" ]
             (List.map viewCircle model.circles)
+        , div [] [ viewFactory ]
+        ]
+
+
+viewFactory : Html Msg
+viewFactory =
+    Svg.svg
+        []
+        [ Svg.rect
+            [ SA.stroke "black"
+            , SA.fill "darkgrey"
+            , SA.x "50"
+            , SA.y "0"
+            , SA.width "10"
+            , SA.height "15"
+            ]
+            []
+        , Svg.rect
+            [ SA.stroke "black"
+            , SA.fill "darkgrey"
+            , SA.x "70"
+            , SA.y "0"
+            , SA.width "10"
+            , SA.height "15"
+            ]
+            []
+        , Svg.polygon
+            [ SA.stroke "black"
+            , SA.fill "grey"
+            , SA.points "90,15 110, 5 110, 15 130,5 130,15 150,5 150,15"
+            ]
+            []
+        , Svg.rect
+            [ SA.stroke "black"
+            , SA.fill "darkred"
+            , SA.x "50"
+            , SA.y "15"
+            , SA.width "100"
+            , SA.height "25"
+            ]
+            []
         ]
 
 
