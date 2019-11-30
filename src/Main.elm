@@ -3,8 +3,11 @@ module Main exposing (..)
 import Browser
 import Html exposing (..)
 import Html.Events exposing (onClick)
+import Random
 import Svg
 import Svg.Attributes as SA
+import Task
+import Time
 
 
 
@@ -40,6 +43,8 @@ type Color
 type alias Model =
     { circles : List Circle
     , next : Int
+    , nextX : Int
+    , nextY : Int
     }
 
 
@@ -49,7 +54,7 @@ type alias Model =
 
 init : flags -> ( Model, Cmd msg )
 init _ =
-    ( Model [ Circle 0 100 100 5 Blue ] 1, Cmd.none )
+    ( Model [ Circle 0 100 100 5 Blue ] 1 75 75, Cmd.none )
 
 
 
@@ -58,6 +63,13 @@ init _ =
 
 type Msg
     = Click Int
+    | PosX Int
+    | PosY Int
+
+
+randomPos : Random.Generator Int
+randomPos =
+    Random.int 0 100
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -68,7 +80,7 @@ update msg model =
                 checkCircle c =
                     if c.id == id then
                         if c.size > 20 then
-                            popCircle c
+                            popCircle model.nextX model.nextY c
 
                         else
                             { c | size = c.size + 1 }
@@ -77,15 +89,27 @@ update msg model =
                         c
             in
             ( { model | circles = List.map checkCircle model.circles }
+            , Random.generate PosX randomPos
+            )
+
+        PosX x ->
+            ( { model | nextX = x }
+            , Random.generate PosY randomPos
+            )
+
+        PosY y ->
+            ( { model | nextY = y }
             , Cmd.none
             )
 
 
-popCircle : Circle -> Circle
-popCircle circle =
+popCircle : Int -> Int -> Circle -> Circle
+popCircle x y circle =
     { circle
         | size = 5
         , color = nextColor circle.color
+        , x = x
+        , y = y
     }
 
 
