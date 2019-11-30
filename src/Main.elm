@@ -47,6 +47,7 @@ type alias Model =
     , next : Int
     , nextX : Int
     , nextY : Int
+    , newCircle : Int
     }
 
 
@@ -56,7 +57,7 @@ type alias Model =
 
 init : flags -> ( Model, Cmd msg )
 init _ =
-    ( Model [ Circle 0 75 300 5 Blue False ] 1 75 75, Cmd.none )
+    ( Model [ Circle 0 75 300 5 Blue False ] 1 75 75 100, Cmd.none )
 
 
 subscriptions : Model -> Sub Msg
@@ -137,7 +138,10 @@ update msg model =
                     else
                         { c | y = c.y - 1 }
             in
-            ( { model | circles = List.map checkCircle model.circles }
+            ( { model
+                | circles = List.map checkCircle model.circles
+                , newCircle = model.newCircle - 1
+              }
             , Random.generate PosX randomPos
             )
 
