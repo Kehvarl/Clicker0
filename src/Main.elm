@@ -2,7 +2,7 @@ module Main exposing (..)
 
 import Browser
 import Html exposing (..)
-import Html.Events exposing (onClick)
+import Html.Events exposing (onClick, onMouseDown, onMouseUp)
 import Random
 import Svg
 import Svg.Attributes as SA
@@ -20,7 +20,7 @@ main =
         { init = init
         , view = view
         , update = update
-        , subscriptions = \model -> Sub.none
+        , subscriptions = subscriptions
         }
 
 
@@ -30,6 +30,7 @@ type alias Circle =
     , y : Int
     , size : Int
     , color : Color
+    , mouseDown : Bool
     }
 
 
@@ -54,7 +55,12 @@ type alias Model =
 
 init : flags -> ( Model, Cmd msg )
 init _ =
-    ( Model [ Circle 0 100 100 5 Blue ] 1 75 75, Cmd.none )
+    ( Model [ Circle 0 100 100 5 Blue False ] 1 75 75, Cmd.none )
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Time.every 100 Tick
 
 
 
@@ -63,8 +69,11 @@ init _ =
 
 type Msg
     = Click Int
+    | Down Int
+    | Up Int
     | PosX Int
     | PosY Int
+    | Tick Time.Posix
 
 
 randomPos : Random.Generator Int
@@ -76,9 +85,48 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Click id ->
+            ( model, Cmd.none )
+
+        Down id ->
             let
                 checkCircle c =
                     if c.id == id then
+                        { c | mouseDown = True }
+
+                    else
+                        c
+            in
+            ( { model | circles = List.map checkCircle model.circles }
+            , Cmd.none
+            )
+
+        Up id ->
+            let
+                checkCircle c =
+                    if c.id == id then
+                        { c | mouseDown = False }
+
+                    else
+                        c
+            in
+            ( { model | circles = List.map checkCircle model.circles }
+            , Cmd.none
+            )
+
+        PosX x ->
+            ( { model | nextX = x }
+            , Random.generate PosY randomPos
+            )
+
+        PosY y ->
+            ( { model | nextY = y }
+            , Cmd.none
+            )
+
+        Tick _ ->
+            let
+                checkCircle c =
+                    if c.mouseDown then
                         if c.size > 20 then
                             popCircle model.nextX model.nextY c
 
@@ -92,16 +140,6 @@ update msg model =
             , Random.generate PosX randomPos
             )
 
-        PosX x ->
-            ( { model | nextX = x }
-            , Random.generate PosY randomPos
-            )
-
-        PosY y ->
-            ( { model | nextY = y }
-            , Cmd.none
-            )
-
 
 popCircle : Int -> Int -> Circle -> Circle
 popCircle x y circle =
@@ -110,6 +148,7 @@ popCircle x y circle =
         , color = nextColor circle.color
         , x = x
         , y = y
+        , mouseDown = False
     }
 
 
@@ -151,7 +190,10 @@ viewCircle c =
         , SA.cx (String.fromInt c.x)
         , SA.cy (String.fromInt c.y)
         , SA.r (String.fromInt c.size)
-        , onClick (Click c.id)
+
+        --, onClick (Click c.id)
+        , onMouseDown (Down c.id)
+        , onMouseUp (Up c.id)
         ]
         []
 
