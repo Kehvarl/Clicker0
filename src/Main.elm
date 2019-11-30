@@ -26,7 +26,15 @@ type alias Circle =
     , x : Int
     , y : Int
     , size : Int
+    , color : Color
     }
+
+
+type Color
+    = Blue
+    | Red
+    | Green
+    | Black
 
 
 type alias Model =
@@ -41,7 +49,7 @@ type alias Model =
 
 init : flags -> ( Model, Cmd msg )
 init _ =
-    ( Model [ Circle 0 100 100 5, Circle 1 100 150 5 ] 2, Cmd.none )
+    ( Model [ Circle 0 100 100 5 Blue ] 1, Cmd.none )
 
 
 
@@ -59,7 +67,11 @@ update msg model =
             let
                 checkCircle c =
                     if c.id == id then
-                        { c | size = c.size + 1 }
+                        if c.size > 20 then
+                            popCircle c
+
+                        else
+                            { c | size = c.size + 1 }
 
                     else
                         c
@@ -67,6 +79,30 @@ update msg model =
             ( { model | circles = List.map checkCircle model.circles }
             , Cmd.none
             )
+
+
+popCircle : Circle -> Circle
+popCircle circle =
+    { circle
+        | size = 5
+        , color = nextColor circle.color
+    }
+
+
+nextColor : Color -> Color
+nextColor color =
+    case color of
+        Blue ->
+            Red
+
+        Red ->
+            Green
+
+        Green ->
+            Black
+
+        Black ->
+            Blue
 
 
 
@@ -87,10 +123,26 @@ viewCircle : Circle -> Html Msg
 viewCircle c =
     Svg.circle
         [ SA.fill "white"
-        , SA.stroke "blue"
+        , SA.stroke (stringFromColor c.color)
         , SA.cx (String.fromInt c.x)
         , SA.cy (String.fromInt c.y)
         , SA.r (String.fromInt c.size)
         , onClick (Click c.id)
         ]
         []
+
+
+stringFromColor : Color -> String
+stringFromColor color =
+    case color of
+        Blue ->
+            "blue"
+
+        Red ->
+            "red"
+
+        Green ->
+            "green"
+
+        Black ->
+            "black"
