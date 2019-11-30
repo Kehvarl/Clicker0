@@ -127,14 +127,15 @@ update msg model =
             )
 
         Tick _ ->
-            ( spawnCircle (raiseCircles model)
+            ( spawnCircle
+                { model
+                    | circles =
+                        List.map
+                            (raiseCircle model.nextX model.nextY)
+                            model.circles
+                }
             , Random.generate PosX randomPos
             )
-
-
-raiseCircles : Model -> Model
-raiseCircles model =
-    { model | circles = List.map (raiseCircle model.nextX model.nextY) model.circles }
 
 
 raiseCircle : Int -> Int -> Circle -> Circle
@@ -165,7 +166,18 @@ spawnCircle : Model -> Model
 spawnCircle model =
     if model.nextCircle == 0 then
         { model
-            | circles = cleanupCircles (model.circles ++ [ Circle model.next model.nextX model.nextY 5 Blue False ])
+            | circles =
+                cleanupCircles
+                    (model.circles
+                        ++ [ Circle
+                                model.next
+                                model.nextX
+                                model.nextY
+                                5
+                                Blue
+                                False
+                           ]
+                    )
             , next = model.next + 1
             , nextCircle = 25
         }
