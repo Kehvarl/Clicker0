@@ -47,6 +47,7 @@ type alias Model =
     , next : Int
     , nextX : Int
     , nextY : Int
+    , nextCircle : Int
     }
 
 
@@ -56,7 +57,7 @@ type alias Model =
 
 init : flags -> ( Model, Cmd msg )
 init _ =
-    ( Model [ Circle 0 75 300 5 Blue False ] 1 75 75, Cmd.none )
+    ( Model [ Circle 0 75 300 5 Blue False ] 1 75 75 25, Cmd.none )
 
 
 subscriptions : Model -> Sub Msg
@@ -137,7 +138,7 @@ update msg model =
                     else
                         { c | y = c.y - 1 }
             in
-            ( { model | circles = List.map checkCircle model.circles }
+            ( spawnCircle { model | circles = List.map checkCircle model.circles }
             , Random.generate PosX randomPos
             )
 
@@ -151,6 +152,24 @@ popCircle x y circle =
         , y = y
         , mouseDown = False
     }
+
+
+spawnCircle : Model -> Model
+spawnCircle model =
+    if model.nextCircle == 0 then
+        { model
+            | circles = cleanupCircles (model.circles ++ [ Circle model.next model.nextX model.nextY 5 Blue False ])
+            , next = model.next + 1
+            , nextCircle = 25
+        }
+
+    else
+        { model | nextCircle = model.nextCircle - 1 }
+
+
+cleanupCircles : List Circle -> List Circle
+cleanupCircles circleList =
+    List.filter (\c -> c.y > 0) circleList
 
 
 nextColor : Color -> Color
