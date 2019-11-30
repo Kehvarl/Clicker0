@@ -2,7 +2,8 @@ module Main exposing (..)
 
 import Browser
 import Html exposing (..)
-import Html.Events exposing (onClick, onMouseDown, onMouseUp)
+import Html.Events exposing (on, onClick, onMouseDown, onMouseUp)
+import Json.Decode
 import Random
 import Svg
 import Svg.Attributes as SA
@@ -194,6 +195,8 @@ viewCircle c =
         --, onClick (Click c.id)
         , onMouseDown (Down c.id)
         , onMouseUp (Up c.id)
+        , on "touchstart" (Json.Decode.succeed (Down c.id))
+        , on "touchend" (Json.Decode.succeed (Up c.id))
         ]
         []
 
