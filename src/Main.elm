@@ -48,6 +48,7 @@ type alias Model =
     , nextX : Int
     , nextY : Int
     , nextCircle : Int
+    , automate : List Color
     }
 
 
@@ -57,7 +58,7 @@ type alias Model =
 
 init : flags -> ( Model, Cmd msg )
 init _ =
-    ( Model [ Circle 0 75 300 5 Blue False ] 1 75 75 25, Cmd.none )
+    ( Model [ Circle 0 75 300 5 Blue False ] 1 75 75 25 [ Red ], Cmd.none )
 
 
 subscriptions : Model -> Sub Msg
@@ -105,7 +106,7 @@ update msg model =
         Up id ->
             let
                 checkCircle c =
-                    if c.id == id then
+                    if c.id == id && not (List.member c.color model.automate) then
                         { c | mouseDown = False }
 
                     else
@@ -126,21 +127,22 @@ update msg model =
             )
 
         Tick _ ->
-            let
-                checkCircle c =
-                    if c.mouseDown then
-                        if c.size > 20 then
-                            popCircle model.nextX model.nextY c
-
-                        else
-                            { c | size = c.size + 1, y = c.y - 1 }
-
-                    else
-                        { c | y = c.y - 1 }
-            in
-            ( spawnCircle { model | circles = List.map checkCircle model.circles }
+            ( spawnCircle { model | circles = List.map raiseCircle model.circles }
             , Random.generate PosX randomPos
             )
+
+
+raiseCircle : Circle -> Circle
+raiseCircle circle =
+    if circle.mouseDown then
+        if circle.size > 20 then
+            popCircle 25 300 circle
+
+        else
+            { circle | size = circle.size + 1, y = circle.y - 1 }
+
+    else
+        { circle | y = circle.y - 1 }
 
 
 popCircle : Int -> Int -> Circle -> Circle
@@ -200,6 +202,7 @@ view model =
             [ SA.height "300", SA.width "400" ]
             (List.map viewCircle model.circles)
         , div [] [ viewFactory ]
+        , div [] []
         ]
 
 
@@ -247,6 +250,7 @@ viewCircle : Circle -> Html Msg
 viewCircle c =
     Svg.circle
         [ SA.fill "white"
+        , SA.fillOpacity "0"
         , SA.stroke (stringFromColor c.color)
         , SA.cx (String.fromInt c.x)
         , SA.cy (String.fromInt c.y)
