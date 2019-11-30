@@ -1,6 +1,7 @@
 module Main exposing (..)
 
 import Browser
+import Color
 import Html exposing (..)
 import Html.Events exposing (on, onClick, onMouseDown, onMouseUp)
 import Json.Decode
@@ -30,16 +31,9 @@ type alias Circle =
     , x : Int
     , y : Int
     , size : Int
-    , color : Color
+    , color : Color.Color
     , mouseDown : Bool
     }
-
-
-type Color
-    = Blue
-    | Red
-    | Green
-    | Black
 
 
 type alias Model =
@@ -48,7 +42,7 @@ type alias Model =
     , nextX : Int
     , nextY : Int
     , nextCircle : Int
-    , automate : List Color
+    , automate : List Color.Color
     }
 
 
@@ -58,7 +52,7 @@ type alias Model =
 
 init : flags -> ( Model, Cmd msg )
 init _ =
-    ( Model [ Circle 0 75 300 5 Blue False ] 1 75 75 25 [ Red ], Cmd.none )
+    ( Model [ Circle 0 75 300 5 Color.Blue False ] 1 75 75 25 [ Color.Red ], Cmd.none )
 
 
 subscriptions : Model -> Sub Msg
@@ -155,7 +149,7 @@ popCircle : Int -> Int -> Circle -> Circle
 popCircle x y circle =
     { circle
         | size = 5
-        , color = nextColor circle.color
+        , color = Color.nextColor circle.color
         , x = x
         , y = y
         , mouseDown = False
@@ -174,7 +168,7 @@ spawnCircle model =
                                 model.nextX
                                 model.nextY
                                 5
-                                Blue
+                                Color.Blue
                                 False
                            ]
                     )
@@ -189,22 +183,6 @@ spawnCircle model =
 cleanupCircles : List Circle -> List Circle
 cleanupCircles circleList =
     List.filter (\c -> c.y > 0) circleList
-
-
-nextColor : Color -> Color
-nextColor color =
-    case color of
-        Blue ->
-            Red
-
-        Red ->
-            Green
-
-        Green ->
-            Black
-
-        Black ->
-            Blue
 
 
 
@@ -268,7 +246,7 @@ viewCircle c =
     Svg.circle
         [ SA.fill "white"
         , SA.fillOpacity "0"
-        , SA.stroke (stringFromColor c.color)
+        , SA.stroke (Color.stringFromColor c.color)
         , SA.cx (String.fromInt c.x)
         , SA.cy (String.fromInt c.y)
         , SA.r (String.fromInt c.size)
@@ -280,19 +258,3 @@ viewCircle c =
         , on "touchend" (Json.Decode.succeed (Up c.id))
         ]
         []
-
-
-stringFromColor : Color -> String
-stringFromColor color =
-    case color of
-        Blue ->
-            "blue"
-
-        Red ->
-            "red"
-
-        Green ->
-            "green"
-
-        Black ->
-            "black"
