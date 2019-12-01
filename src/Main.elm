@@ -45,7 +45,6 @@ type alias Model =
     , nextX : Int
     , nextY : Int
     , nextCircle : Int
-    , automate : List Color.Color
     }
 
 
@@ -55,7 +54,7 @@ type alias Model =
 
 init : flags -> ( Model, Cmd msg )
 init _ =
-    ( Model [ Circle 0 75 300 5 0 1 0 Color.Blue False ] 1 75 75 25 [ Color.Red ], Cmd.none )
+    ( Model [ Circle 0 75 300 5 0 1 0 Color.Blue False ] 1 75 75 25, Cmd.none )
 
 
 subscriptions : Model -> Sub Msg
