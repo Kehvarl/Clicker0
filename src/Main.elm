@@ -33,7 +33,6 @@ type alias Circle =
     , size : Int
     , color : Color.Color
     , mouseDown : Bool
-    , popped : Bool
     }
 
 
@@ -44,7 +43,6 @@ type alias Model =
     , nextY : Int
     , nextCircle : Int
     , automate : List Color.Color
-    , popped : Int
     }
 
 
@@ -54,7 +52,7 @@ type alias Model =
 
 init : flags -> ( Model, Cmd msg )
 init _ =
-    ( Model [ Circle 0 75 300 5 Color.Blue False False ] 1 75 75 25 [ Color.Red ] 0, Cmd.none )
+    ( Model [ Circle 0 75 300 5 Color.Blue False ] 1 75 75 25 [ Color.Red ], Cmd.none )
 
 
 subscriptions : Model -> Sub Msg
@@ -73,7 +71,6 @@ type Msg
     | PosX Int
     | PosY Int
     | Tick Time.Posix
-    | Cleanup
 
 
 randomPos : Random.Generator Int
@@ -125,24 +122,21 @@ update msg model =
 
         Tick _ ->
             ( spawnCircle
-                (processCircles model)
-            , Cleanup
+                { model
+                    | circles =
+                        List.map
+                            (raiseCircle model.nextX model.nextY)
+                            model.circles
+                }
+            , Random.generate PosX randomPos
             )
 
-        Cleanup ->
-            ( model, Random.generate PosX randomPos )
 
-
-processCircles : Model -> Model
-processCircles model =
-    { model | circles = List.map (raiseCircles model) model.circles }
-
-
-raiseCircles : Model -> Circle -> Circle
-raiseCircles model circle =
+raiseCircle : Int -> Int -> Circle -> Circle
+raiseCircle nextX nextY circle =
     if circle.mouseDown then
         if circle.size > 20 then
-            popCircle model circle
+            popCircle nextX nextY circle
 
         else
             { circle | size = circle.size + 1, y = circle.y - 1 }
@@ -151,27 +145,15 @@ raiseCircles model circle =
         { circle | y = circle.y - 1 }
 
 
-popCircle : Model -> Circle -> Circle
-popCircle model circle =
+popCircle : Int -> Int -> Circle -> Circle
+popCircle x y circle =
     { circle
-        | popped = True
+        | size = 5
+        , color = Color.nextColor circle.color
+        , x = x
+        , y = y
+        , mouseDown = False
     }
-
-
-canPop : Circle -> List Circle -> List Circle
-canPop circle circleList =
-    let
-        checkCircle c1 c2 =
-            let
-                dx =
-                    abs (toFloat c1.x - toFloat c2.x) ^ 2
-
-                dy =
-                    abs (toFloat c1.y - toFloat c2.y) ^ 2
-            in
-            sqrt (dx + dy) <= toFloat c1.size + toFloat c2.size
-    in
-    List.filter (checkCircle circle) circleList
 
 
 spawnCircle : Model -> Model
@@ -187,7 +169,6 @@ spawnCircle model =
                                 model.nextY
                                 5
                                 Color.Blue
-                                False
                                 False
                            ]
                     )
