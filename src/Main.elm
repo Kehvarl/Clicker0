@@ -1,6 +1,7 @@
 module Main exposing (..)
 
 import Browser
+import Color
 import Html exposing (..)
 import Html.Events exposing (on, onClick, onMouseDown, onMouseUp)
 import Json.Decode
@@ -30,16 +31,9 @@ type alias Circle =
     , x : Int
     , y : Int
     , size : Int
-    , color : Color
+    , color : Color.Color
     , mouseDown : Bool
     }
-
-
-type Color
-    = Blue
-    | Red
-    | Green
-    | Black
 
 
 type alias Model =
@@ -48,6 +42,7 @@ type alias Model =
     , nextX : Int
     , nextY : Int
     , nextCircle : Int
+    , automate : List Color.Color
     }
 
 
@@ -57,7 +52,7 @@ type alias Model =
 
 init : flags -> ( Model, Cmd msg )
 init _ =
-    ( Model [ Circle 0 75 300 5 Blue False ] 1 75 75 25, Cmd.none )
+    ( Model [ Circle 0 75 300 5 Color.Blue False ] 1 75 75 25 [ Color.Red ], Cmd.none )
 
 
 subscriptions : Model -> Sub Msg
@@ -105,7 +100,7 @@ update msg model =
         Up id ->
             let
                 checkCircle c =
-                    if c.id == id then
+                    if c.id == id && not (List.member c.color model.automate) then
                         { c | mouseDown = False }
 
                     else
@@ -126,28 +121,35 @@ update msg model =
             )
 
         Tick _ ->
-            let
-                checkCircle c =
-                    if c.mouseDown then
-                        if c.size > 20 then
-                            popCircle model.nextX model.nextY c
-
-                        else
-                            { c | size = c.size + 1, y = c.y - 1 }
-
-                    else
-                        { c | y = c.y - 1 }
-            in
-            ( spawnCircle { model | circles = List.map checkCircle model.circles }
+            ( spawnCircle
+                { model
+                    | circles =
+                        List.map
+                            (raiseCircle model.nextX model.nextY)
+                            model.circles
+                }
             , Random.generate PosX randomPos
             )
+
+
+raiseCircle : Int -> Int -> Circle -> Circle
+raiseCircle nextX nextY circle =
+    if circle.mouseDown then
+        if circle.size > 20 then
+            popCircle nextX nextY circle
+
+        else
+            { circle | size = circle.size + 1, y = circle.y - 1 }
+
+    else
+        { circle | y = circle.y - 1 }
 
 
 popCircle : Int -> Int -> Circle -> Circle
 popCircle x y circle =
     { circle
         | size = 5
-        , color = nextColor circle.color
+        , color = Color.nextColor circle.color
         , x = x
         , y = y
         , mouseDown = False
@@ -158,7 +160,18 @@ spawnCircle : Model -> Model
 spawnCircle model =
     if model.nextCircle == 0 then
         { model
-            | circles = cleanupCircles (model.circles ++ [ Circle model.next model.nextX model.nextY 5 Blue False ])
+            | circles =
+                cleanupCircles
+                    (model.circles
+                        ++ [ Circle
+                                model.next
+                                model.nextX
+                                model.nextY
+                                5
+                                Color.Blue
+                                False
+                           ]
+                    )
             , next = model.next + 1
             , nextCircle = 25
         }
@@ -170,22 +183,6 @@ spawnCircle model =
 cleanupCircles : List Circle -> List Circle
 cleanupCircles circleList =
     List.filter (\c -> c.y > 0) circleList
-
-
-nextColor : Color -> Color
-nextColor color =
-    case color of
-        Blue ->
-            Red
-
-        Red ->
-            Green
-
-        Green ->
-            Black
-
-        Black ->
-            Blue
 
 
 
@@ -200,6 +197,7 @@ view model =
             [ SA.height "300", SA.width "400" ]
             (List.map viewCircle model.circles)
         , div [] [ viewFactory ]
+        , div [] []
         ]
 
 
@@ -247,7 +245,8 @@ viewCircle : Circle -> Html Msg
 viewCircle c =
     Svg.circle
         [ SA.fill "white"
-        , SA.stroke (stringFromColor c.color)
+        , SA.fillOpacity "0"
+        , SA.stroke (Color.stringFromColor c.color)
         , SA.cx (String.fromInt c.x)
         , SA.cy (String.fromInt c.y)
         , SA.r (String.fromInt c.size)
@@ -259,19 +258,3 @@ viewCircle c =
         , on "touchend" (Json.Decode.succeed (Up c.id))
         ]
         []
-
-
-stringFromColor : Color -> String
-stringFromColor color =
-    case color of
-        Blue ->
-            "blue"
-
-        Red ->
-            "red"
-
-        Green ->
-            "green"
-
-        Black ->
-            "black"
