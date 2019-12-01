@@ -54,7 +54,7 @@ type alias Model =
 
 init : flags -> ( Model, Cmd msg )
 init _ =
-    ( Model [ Circle 0 75 300 5 0 1 0 Color.Blue False ] 1 75 75 25, Cmd.none )
+    ( Model [ Circle 0 75 300 5 0 1 0 Color.Blue False ] 1 75 300 25, Cmd.none )
 
 
 subscriptions : Model -> Sub Msg
@@ -67,11 +67,9 @@ subscriptions model =
 
 
 type Msg
-    = Click Int
-    | Down Int
+    = Down Int
     | Up Int
     | PosX Int
-    | PosY Int
     | Tick Time.Posix
 
 
@@ -83,9 +81,6 @@ randomPos =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Click id ->
-            ( model, Cmd.none )
-
         Down id ->
             let
                 checkCircle c =
@@ -96,7 +91,7 @@ update msg model =
                         c
             in
             ( { model | circles = List.map checkCircle model.circles }
-            , Cmd.none
+            , Random.generate PosX randomPos
             )
 
         Up id ->
@@ -114,11 +109,6 @@ update msg model =
 
         PosX x ->
             ( { model | nextX = x }
-            , Random.generate PosY randomPos
-            )
-
-        PosY y ->
-            ( { model | nextY = 300 }
             , Cmd.none
             )
 
