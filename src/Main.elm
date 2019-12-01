@@ -36,6 +36,7 @@ type alias Circle =
     , vR : Float
     , color : Color.Color
     , mouseDown : Bool
+    , popped : Bool
     }
 
 
@@ -54,7 +55,7 @@ type alias Model =
 
 init : flags -> ( Model, Cmd msg )
 init _ =
-    ( Model [ Circle 0 75 300 5 0 1 0 Color.Blue False ] 1 75 300 25, Cmd.none )
+    ( Model [ Circle 0 75 300 5 0 1 0 Color.Blue False False ] 1 75 300 25, Cmd.none )
 
 
 subscriptions : Model -> Sub Msg
@@ -121,21 +122,19 @@ update msg model =
 
 updateCircles : Model -> Model
 updateCircles model =
-    { model | circles = cleanupCircles (List.map pressCircle (List.map updateCircle model.circles)) }
+    cleanupCircles
+        (spawnCircles
+            { model
+                | circles =
+                    List.map pressCircle
+                        (List.map updateCircle model.circles)
+            }
+        )
 
 
-cleanupCircles : List Circle -> List Circle
-cleanupCircles circleList =
-    List.filter (\c -> c.y > 0) circleList
-
-
-updateCircle : Circle -> Circle
-updateCircle circle =
-    popCircle
-        { circle
-            | y = circle.y - circle.vY
-            , size = circle.size + circle.vR
-        }
+cleanupCircles : Model -> Model
+cleanupCircles model =
+    { model | circles = List.filter (\c -> c.y > 0) model.circles }
 
 
 pressCircle : Circle -> Circle
@@ -147,10 +146,19 @@ pressCircle circle =
         circle
 
 
+updateCircle : Circle -> Circle
+updateCircle circle =
+    popCircle
+        { circle
+            | y = circle.y - circle.vY
+            , size = circle.size + circle.vR
+        }
+
+
 popCircle : Circle -> Circle
 popCircle circle =
     if circle.size > 20 then
-        { circle | x = 0, y = 0 }
+        { circle | popped = True }
 
     else
         circle
@@ -171,6 +179,11 @@ canSpawnCircle model =
         { model | nextCircle = model.nextCircle - 1 }
 
 
+spawnCircles : Model -> Model
+spawnCircles model =
+    model
+
+
 spawnCircle : Model -> Color.Color -> Circle
 spawnCircle model color =
     Circle
@@ -182,6 +195,7 @@ spawnCircle model color =
         1
         0
         color
+        False
         False
 
 
@@ -195,7 +209,7 @@ view model =
         []
         [ Svg.svg
             [ SA.height "300", SA.width "400" ]
-            (List.map viewCircle model.circles)
+            (List.map viewCircle (List.filter (\c -> c.popped == False) model.circles))
         , div [] [ viewFactory ]
         , div [] []
         ]
