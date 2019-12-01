@@ -31,6 +31,9 @@ type alias Circle =
     , x : Int
     , y : Int
     , size : Int
+    , vX : Int
+    , vY : Int
+    , vR : Int
     , color : Color.Color
     , mouseDown : Bool
     }
@@ -52,7 +55,7 @@ type alias Model =
 
 init : flags -> ( Model, Cmd msg )
 init _ =
-    ( Model [ Circle 0 75 300 5 Color.Blue False ] 1 75 75 25 [ Color.Red ], Cmd.none )
+    ( Model [ Circle 0 75 300 5 0 1 0 Color.Blue False ] 1 75 75 25 [ Color.Red ], Cmd.none )
 
 
 subscriptions : Model -> Sub Msg
@@ -100,7 +103,7 @@ update msg model =
         Up id ->
             let
                 checkCircle c =
-                    if c.id == id && not (List.member c.color model.automate) then
+                    if c.id == id then
                         { c | mouseDown = False }
 
                     else
@@ -142,7 +145,7 @@ raiseCircle nextX nextY circle =
             { circle | size = circle.size + 1, y = circle.y - 1 }
 
     else
-        { circle | y = circle.y - 1 }
+        { circle | y = circle.y - circle.vY }
 
 
 popCircle : Int -> Int -> Circle -> Circle
@@ -168,6 +171,9 @@ spawnCircle model =
                                 model.nextX
                                 model.nextY
                                 5
+                                0
+                                1
+                                0
                                 Color.Blue
                                 False
                            ]
