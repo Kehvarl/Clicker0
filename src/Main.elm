@@ -30,12 +30,13 @@ type alias Circle =
     { id : Int
     , x : Int
     , y : Int
-    , size : Int
+    , size : Float
     , vX : Int
     , vY : Int
-    , vR : Int
+    , vR : Float
     , color : Color.Color
     , mouseDown : Bool
+    , popped : Bool
     }
 
 
@@ -45,7 +46,6 @@ type alias Model =
     , nextX : Int
     , nextY : Int
     , nextCircle : Int
-    , automate : List Color.Color
     }
 
 
@@ -55,7 +55,7 @@ type alias Model =
 
 init : flags -> ( Model, Cmd msg )
 init _ =
-    ( Model [ Circle 0 75 300 5 0 1 0 Color.Blue False ] 1 75 75 25 [ Color.Red ], Cmd.none )
+    ( Model [ Circle 0 75 300 5 0 1 0 Color.Blue False False ] 1 75 300 25, Cmd.none )
 
 
 subscriptions : Model -> Sub Msg
@@ -68,11 +68,9 @@ subscriptions model =
 
 
 type Msg
-    = Click Int
-    | Down Int
+    = Down Int
     | Up Int
     | PosX Int
-    | PosY Int
     | Tick Time.Posix
 
 
@@ -84,9 +82,6 @@ randomPos =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Click id ->
-            ( model, Cmd.none )
-
         Down id ->
             let
                 checkCircle c =
@@ -97,7 +92,7 @@ update msg model =
                         c
             in
             ( { model | circles = List.map checkCircle model.circles }
-            , Cmd.none
+            , Random.generate PosX randomPos
             )
 
         Up id ->
@@ -115,69 +110,67 @@ update msg model =
 
         PosX x ->
             ( { model | nextX = x }
-            , Random.generate PosY randomPos
-            )
-
-        PosY y ->
-            ( { model | nextY = 300 }
             , Cmd.none
             )
 
         Tick _ ->
-            ( spawnCircle
-                { model
-                    | circles =
-                        List.map
-                            (raiseCircle model.nextX model.nextY)
-                            model.circles
-                }
+            ( canSpawnCircle
+                (updateCircles model)
             , Random.generate PosX randomPos
             )
 
 
-raiseCircle : Int -> Int -> Circle -> Circle
-raiseCircle nextX nextY circle =
-    if circle.mouseDown then
-        if circle.size > 20 then
-            popCircle nextX nextY circle
+updateCircles : Model -> Model
+updateCircles model =
+    cleanupCircles
+        (spawnCircles
+            { model
+                | circles =
+                    List.map pressCircle
+                        (List.map updateCircle model.circles)
+            }
+        )
 
-        else
-            { circle | size = circle.size + 1, y = circle.y - 1 }
+
+cleanupCircles : Model -> Model
+cleanupCircles model =
+    { model | circles = List.filter (\c -> c.y > 0) model.circles }
+
+
+pressCircle : Circle -> Circle
+pressCircle circle =
+    if circle.mouseDown then
+        { circle | vR = circle.vR + 0.05 }
 
     else
-        { circle | y = circle.y - circle.vY }
+        circle
 
 
-popCircle : Int -> Int -> Circle -> Circle
-popCircle x y circle =
-    { circle
-        | size = 5
-        , color = Color.nextColor circle.color
-        , x = x
-        , y = y
-        , mouseDown = False
-    }
+updateCircle : Circle -> Circle
+updateCircle circle =
+    popCircle
+        { circle
+            | y = circle.y - circle.vY
+            , size = circle.size + circle.vR
+        }
 
 
-spawnCircle : Model -> Model
-spawnCircle model =
+popCircle : Circle -> Circle
+popCircle circle =
+    if circle.size > 20 then
+        { circle | popped = True }
+
+    else
+        circle
+
+
+canSpawnCircle : Model -> Model
+canSpawnCircle model =
     if model.nextCircle == 0 then
         { model
             | circles =
-                cleanupCircles
-                    (model.circles
-                        ++ [ Circle
-                                model.next
-                                model.nextX
-                                model.nextY
-                                5
-                                0
-                                1
-                                0
-                                Color.Blue
-                                False
-                           ]
-                    )
+                model.circles
+                    ++ [ spawnCircle model Color.Blue ]
             , next = model.next + 1
             , nextCircle = 25
         }
@@ -186,9 +179,24 @@ spawnCircle model =
         { model | nextCircle = model.nextCircle - 1 }
 
 
-cleanupCircles : List Circle -> List Circle
-cleanupCircles circleList =
-    List.filter (\c -> c.y > 0) circleList
+spawnCircles : Model -> Model
+spawnCircles model =
+    model
+
+
+spawnCircle : Model -> Color.Color -> Circle
+spawnCircle model color =
+    Circle
+        model.next
+        model.nextX
+        model.nextY
+        5
+        0
+        1
+        0
+        color
+        False
+        False
 
 
 
@@ -201,7 +209,7 @@ view model =
         []
         [ Svg.svg
             [ SA.height "300", SA.width "400" ]
-            (List.map viewCircle model.circles)
+            (List.map viewCircle (List.filter (\c -> c.popped == False) model.circles))
         , div [] [ viewFactory ]
         , div [] []
         ]
@@ -255,7 +263,7 @@ viewCircle c =
         , SA.stroke (Color.stringFromColor c.color)
         , SA.cx (String.fromInt c.x)
         , SA.cy (String.fromInt c.y)
-        , SA.r (String.fromInt c.size)
+        , SA.r (String.fromFloat c.size)
 
         --, onClick (Click c.id)
         , onMouseDown (Down c.id)
